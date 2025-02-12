@@ -1,12 +1,6 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 
-const pruebaUser = (req, res) => {
-  return res.status(200).send({
-    message: "mensaje enviado desde: controller(/user",
-  });
-};
-
 const register = async (req, res) => {
   try {
     // Capturar los datos de la petición
@@ -25,6 +19,7 @@ const register = async (req, res) => {
     const nick = params.nick.toLowerCase();
 
     // Buscar usuarios duplicados
+
     const users = await User.find({
       $or: [{ email: email }, { nick: nick }],
     });
@@ -65,6 +60,5 @@ const register = async (req, res) => {
 };
 
 module.exports = {
-  pruebaUser,
   register,
 };
