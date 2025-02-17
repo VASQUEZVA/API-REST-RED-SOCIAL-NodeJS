@@ -1,6 +1,6 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
-
+const jwt = require("../services/jwt");
 const register = async (req, res) => {
   try {
     // Capturar los datos de la petición
@@ -105,8 +105,7 @@ const login = async (req, res) => {
       nick: userWithoutPassword.nick,
     };
 
-    // Retornar token (si usas JWT, por ejemplo)
-    // const token = generateToken(user); // Implementar generateToken()
+    const token = jwt.createToken(user);
 
     // Respuesta con los datos del usuario
 
