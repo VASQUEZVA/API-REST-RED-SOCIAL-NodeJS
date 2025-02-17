@@ -43,6 +43,7 @@ const register = async (req, res) => {
     });
 
     // Guardar usuario en la base de datos con `await`
+
     const userStored = await user_to_save.save();
 
     return res.status(201).json({
@@ -59,6 +60,72 @@ const register = async (req, res) => {
   }
 };
 
+const login = async (req, res) => {
+  try {
+    // Capturar los datos que llegan en la petición
+
+    const params = req.body;
+
+    if (!params.email || !params.password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Faltan datos por enviar",
+      });
+    }
+
+    // Verificar en la BD si existe el usuario
+
+    const user = await User.findOne({ email: params.email });
+
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "El usuario no existe",
+      });
+    }
+
+    // Verificar la contraseña
+
+    const passwordMatch = await bcrypt.compare(params.password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({
+        status: "error",
+        message: "Contraseña incorrecta",
+      });
+    }
+
+    const userWithoutPassword = user.toObject();
+    delete userWithoutPassword.password;
+
+    // Crear respuesta con solo los campos necesarios
+
+    const userResponse = {
+      id: userWithoutPassword._id, 
+      name: userWithoutPassword.name,
+      nick: userWithoutPassword.nick,
+    };
+
+    // Retornar token (si usas JWT, por ejemplo)
+    // const token = generateToken(user); // Implementar generateToken()
+
+    // Respuesta con los datos del usuario
+
+    res.status(200).json({
+      status: "success",
+      message: "Login exitoso",
+      user: userResponse,
+      token,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Error en el servidor",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   register,
+  login,
 };
