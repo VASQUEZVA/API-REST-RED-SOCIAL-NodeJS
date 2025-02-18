@@ -8,10 +8,10 @@ const secret = libjwt.secret;
 
 //Autenticacion.
 
-exports.auth = (req, res) => {
+exports.auth = (req, res, next) => {
   // comprobar si llega la cabecera de autenticacion
 
-  if (!req.headers.auth.authorization) {
+  if (!req.headers.authorization) {
     return res.status(403).send({
       status: "error",
       message: " la peticion  no tiene  la cebecera  de autenticacion",
@@ -23,7 +23,7 @@ exports.auth = (req, res) => {
   let token = req.headers.authorization.replace(/['"]+/g, "");
 
   try {
-    let payload = kwt.decode(token, secret);
+    let payload = jwt.decode(token, secret);
 
     if (payload.exp <= moment().unix()) {
       res.status(401).send({
@@ -32,6 +32,11 @@ exports.auth = (req, res) => {
         error,
       });
     }
+
+    //agregar datos de usuario  a request
+    req.user = payload;
+
+    next();
   } catch (error) {
     res.status(404).send({
       status: "error",
@@ -39,9 +44,4 @@ exports.auth = (req, res) => {
       error,
     });
   }
-
-  //agregar datos de usuario  a request
-  req.user = payload;
-
-  next();
 };
