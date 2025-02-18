@@ -7,7 +7,7 @@ const secret= "CLAVE_SECRETA_DE_LA_RED_SOCIAL_981236237890#";
 
 //Funcion  para generar tokend
 
-exports.createToken = (user)=>{
+const createToken = (user)=>{
     const payload = {
         id: user._id,
         name: user.name,
@@ -23,3 +23,7 @@ exports.createToken = (user)=>{
     return jwt.encode(payload, secret);
 }
 
+module.exports = {
+    secret,
+    createToken,
+}
