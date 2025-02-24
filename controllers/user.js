@@ -199,63 +199,55 @@ const ListProfiles = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    // Obtener datos del cuerpo de la solicitud
+    // Capturar información del usuario autenticado
+    const userId = req.user.id;
+
+    // Extraer los campos enviados en la solicitud
     const { email, nick, password, ...otherData } = req.body;
 
-    // Copia segura de los datos del usuario autenticado
-    let userToUpdate = { ...otherData };
+    // Objeto para almacenar los campos a actualizar
+    let updateFields = { ...otherData };
 
-    // Convertir email y nick a minúsculas si existen
-    if (email) userToUpdate.email = email.toLowerCase();
-    if (nick) userToUpdate.nick = nick.toLowerCase();
-
-    // Verificar si el email o nick ya existen en otro usuario
-    const existingUser = await User.findOne({
-      $or: [{ email: userToUpdate.email }, { nick: userToUpdate.nick }],
-      _id: { $ne: req.user._id }, // Excluir el usuario actual
-    });
-
-    if (existingUser) {
-      return res.status(409).json({
-        status: "error",
-        message: "El email o el nick ya están en uso",
-      });
+    // Si se envía un nuevo email, verificar duplicados
+    if (email) {
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail && existingEmail._id.toString() !== userId) {
+        return res
+          .status(409)
+          .json({ status: "error", message: "El email ya está en uso" });
+      }
+      updateFields.email = email;
     }
 
-    // Cifrar la nueva contraseña solo si se proporciona
+    // Si se envía un nuevo nick, verificar duplicados
+    if (nick) {
+      const existingNick = await User.findOne({ nick });
+      if (existingNick && existingNick._id.toString() !== userId) {
+        return res
+          .status(409)
+          .json({ status: "error", message: "El nick ya está en uso" });
+      }
+      updateFields.nick = nick;
+    }
+
+    // Si se envía una nueva contraseña, cifrarla
     if (password) {
-      userToUpdate.password = await bcrypt.hash(password, 10);
+      updateFields.password = await bcrypt.hash(password, 10);
     }
 
     // Actualizar el usuario en la base de datos
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user._id,
-      userToUpdate,
-      {
-        new: true, // Devuelve el usuario actualizado
-        runValidators: true, // Aplica validaciones del esquema
-      }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({
-        status: "error",
-        message: "No se pudo actualizar el usuario",
-      });
-    }
-
-    return res.status(200).json({
-      status: "success",
-      message: "Usuario actualizado correctamente",
-      user: updatedUser,
+    const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
+      new: true,
     });
+
+    // Responder con el usuario actualizado
+    return res
+      .status(200)
+      .json({ status: "success", message: "Usuario actualizado", updatedUser });
   } catch (error) {
-    console.error("Error al actualizar usuario:", error);
-    return res.status(500).json({
-      status: "error",
-      message: "Error interno en la actualización del usuario",
-      error: error.message,
-    });
+    return res
+      .status(500)
+      .json({ status: "error", message: "Error en la actualización", error });
   }
 };
 
