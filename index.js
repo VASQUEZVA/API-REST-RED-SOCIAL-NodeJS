@@ -1,5 +1,3 @@
-// conexion a la base de datos
-
 const connection = require("./database/connection");
 const express = require("express");
 const cors = require("cors");
@@ -8,7 +6,7 @@ const cors = require("cors");
 
 connection();
 
-// crear  servidor
+// crear  servidor()
 
 const app = express();
 const port = 3000;
@@ -21,18 +19,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// cargar rutas de prueba
+// cargar rutas
 
 const UserRoutes = require("./routes/user");
 const PublicationRoutes = require("./routes/publication");
 const FollowRoutes = require("./routes/follow");
 
-app.use("/api/user", UserRoutes);
+app.use("/api", UserRoutes);
 app.use("/api", PublicationRoutes);
 app.use("/api", FollowRoutes);
 
 // Poner servidor a escuchar http
 
 app.listen(port, () => {
-  console.log("Servidor de  node corriendo en el puerto:", port);
+  console.log("Servidor de  node Corriendo en el puerto:", port);
 });

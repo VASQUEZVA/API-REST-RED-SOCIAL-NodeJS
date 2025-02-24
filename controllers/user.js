@@ -1,6 +1,9 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("../services/jwt");
+const mongoosePagination = require("mongoose-pagination");
+const { matches } = require("validator");
+
 const register = async (req, res) => {
   try {
     // Capturar los datos de la petición
@@ -31,7 +34,7 @@ const register = async (req, res) => {
       });
     }
 
-    // Cifrar la contraseña correctamente con `await`
+    // Cifrar la contraseña correctamente con `bcrypt`
     const hashedPassword = await bcrypt.hash(params.password, 10);
 
     // Crear un objeto de usuario con la contraseña cifrada
@@ -100,7 +103,7 @@ const login = async (req, res) => {
     // Crear respuesta con solo los campos necesarios
 
     const userResponse = {
-      id: userWithoutPassword._id, 
+      id: userWithoutPassword._id,
       name: userWithoutPassword.name,
       nick: userWithoutPassword.nick,
     };
@@ -124,7 +127,142 @@ const login = async (req, res) => {
   }
 };
 
+const profile = async (req, res) => {
+  try {
+    // Recibir el ID de la petición.
+
+    const id = req.params.id;
+
+    // Consultar los datos del usuario
+    const userProfile = await User.findById(id).select(
+      "id name nick email __v  create_at "
+    );
+
+    // Si no se encuentra el usuario
+    if (!userProfile) {
+      return res.status(404).send({
+        status: "error",
+        message: "El usuario no existe",
+      });
+    }
+
+    // Devolver los datos consultados si es correcto.
+
+    return res.status(201).send({
+      status: "success",
+      user: userProfile,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      status: "error",
+      message: "Error en la petición",
+      error,
+    });
+  }
+};
+
+const ListProfiles = async (req, res) => {
+  try {
+    let page = parseInt(req.params.page) || 1;
+
+    let itemsPerPage = 5;
+
+    const users = await User.find()
+      .sort("_id")
+      .skip((page - 1) * itemsPerPage)
+      .limit(itemsPerPage);
+    const total = await User.countDocuments();
+
+    if (!users.length) {
+      return res.status(404).send({
+        status: "error",
+        message: "No hay usuarios disponibles",
+      });
+    }
+
+    return res.status(200).send({
+      status: "success",
+      users,
+      page,
+      itemsPerPage,
+      total,
+      pages: Math.ceil(total / itemsPerPage),
+    });
+  } catch (error) {
+    return res.status(500).send({
+      status: "error",
+      message: "Error en la consulta",
+      error: error.message,
+    });
+  }
+};
+
+const update = async (req, res) => {
+  try {
+    // Obtener datos del cuerpo de la solicitud
+    const { email, nick, password, ...otherData } = req.body;
+
+    // Copia segura de los datos del usuario autenticado
+    let userToUpdate = { ...otherData };
+
+    // Convertir email y nick a minúsculas si existen
+    if (email) userToUpdate.email = email.toLowerCase();
+    if (nick) userToUpdate.nick = nick.toLowerCase();
+
+    // Verificar si el email o nick ya existen en otro usuario
+    const existingUser = await User.findOne({
+      $or: [{ email: userToUpdate.email }, { nick: userToUpdate.nick }],
+      _id: { $ne: req.user._id }, // Excluir el usuario actual
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        status: "error",
+        message: "El email o el nick ya están en uso",
+      });
+    }
+
+    // Cifrar la nueva contraseña solo si se proporciona
+    if (password) {
+      userToUpdate.password = await bcrypt.hash(password, 10);
+    }
+
+    // Actualizar el usuario en la base de datos
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      userToUpdate,
+      {
+        new: true, // Devuelve el usuario actualizado
+        runValidators: true, // Aplica validaciones del esquema
+      }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        status: "error",
+        message: "No se pudo actualizar el usuario",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Usuario actualizado correctamente",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Error interno en la actualización del usuario",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
+  profile,
+  ListProfiles,
+  update,
 };

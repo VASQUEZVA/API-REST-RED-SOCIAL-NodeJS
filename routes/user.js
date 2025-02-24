@@ -6,8 +6,10 @@ const check = require("../middlewares/auth");
 //  rutas enpoint
 
 router.post("/register", UserController.register);
-router.post("/login",check.auth, UserController.login)
-//router.post("/login", UserController.login)
+router.post("/login", UserController.login)
+router.get("/profile/:id",check.auth, UserController.profile)
+router.get("/list/:page?", check.auth, UserController.ListProfiles)
+router.put("/update", check.auth, UserController.update);
 
 
 
