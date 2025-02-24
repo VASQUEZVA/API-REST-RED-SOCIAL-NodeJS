@@ -200,12 +200,15 @@ const ListProfiles = async (req, res) => {
 const update = async (req, res) => {
   try {
     // Capturar información del usuario autenticado
+
     const userId = req.user.id;
 
     // Extraer los campos enviados en la solicitud
+
     const { email, nick, password, ...otherData } = req.body;
 
     // Objeto para almacenar los campos a actualizar
+
     let updateFields = { ...otherData };
 
     // Si se envía un nuevo email, verificar duplicados
@@ -231,23 +234,29 @@ const update = async (req, res) => {
     }
 
     // Si se envía una nueva contraseña, cifrarla
+
     if (password) {
       updateFields.password = await bcrypt.hash(password, 10);
     }
 
     // Actualizar el usuario en la base de datos
+
     const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
       new: true,
     });
 
     // Responder con el usuario actualizado
-    return res
-      .status(200)
-      .json({ status: "success", message: "Usuario actualizado", updatedUser });
+    return res.status(200).json({
+      status: "success",
+      message: "Usuario actualizado",
+      updatedUser,
+    });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ status: "error", message: "Error en la actualización", error });
+    return res.status(500).json({
+      status: "error",
+      message: "Error en la actualización",
+      error,
+    });
   }
 };
 
