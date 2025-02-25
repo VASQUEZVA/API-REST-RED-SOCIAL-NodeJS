@@ -266,6 +266,8 @@ const upload = (req, res) => {
     status: "success",
     message: "Imagen cargada correctamente",
    user: req.user,
+   file: req.file,
+   files: req.files,
   });
 };
 
