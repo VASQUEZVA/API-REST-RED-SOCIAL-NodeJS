@@ -4,6 +4,7 @@ const jwt = require("../services/jwt");
 const mongoosePagination = require("mongoose-pagination");
 const { matches } = require("validator");
 const fs = require("fs");
+const path = require("path");
 
 const register = async (req, res) => {
   try {
@@ -261,46 +262,64 @@ const update = async (req, res) => {
   }
 };
 
-const upload = (req, res) => {
-  // Capturar el fichero de imagen y comprobar que existe
-  if (!req.file) {
-    return res.status(404).send({
+const upload = async (req, res) => {
+  try {
+    // Capturar el fichero de imagen y comprobar que existe
+    if (!req.file) {
+      return res.status(404).send({
+        status: "error",
+        message: "La petición no incluyó la imagen",
+      });
+    }
+
+    // Obtener el nombre del archivo
+    let image = req.file.filename;
+
+    // Obtener la extensión del archivo
+    const extension = path.extname(image).toLowerCase().replace(".", "");
+
+    // Comprobar extensión válida
+    if (!["png", "jpg", "jpeg", "gif"].includes(extension)) {
+
+      // Obtener ruta del archivo subido
+      const filePath = req.file.path;
+
+      // Borrar archivo
+      fs.unlinkSync(filePath);
+
+      return res.status(400).send({
+        status: "error",
+        message: "Extensión del archivo inválida",
+      });
+    }
+
+    // Actualizar el usuario en la base de datos
+    const userId = req.user.id;
+    const userUpdated = await User.findByIdAndUpdate(
+      userId,
+      { image },
+      { new: true }
+    );
+
+    if (!userUpdated) {
+      return res.status(500).send({
+        status: "error",
+        message: "No se pudo actualizar el usuario con la imagen",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Imagen cargada y guardada correctamente",
+      user: userUpdated,
+    });
+  } catch (error) {
+    return res.status(500).json({
       status: "error",
-      message: "La petición no incluyó la imagen",
+      message: "Error en el servidor",
+      error: error.message,
     });
   }
-
-  // Obtener el nombre del archivo
-  let image = req.file.originalname;
-
-  // Obtener la extensión del archivo
-  const imageSplit = image.split(".");
-  const extension = imageSplit[imageSplit.length - 1].toLowerCase();
-
-  // Comprobar extensión válida
-  if (!["png", "jpg", "jpeg", "gif"].includes(extension)) {
-
-    // Obtener ruta del archivo subido
-    const filePath = req.file.path; // Corrección aquí
-
-    // Borrar archivo si tiene ext. equivocada
-    fs.unlinkSync(filePath);
-
-    // Respuesta negativa
-    return res.status(400).send({
-      status: "error",
-      message: "Extensión del archivo inválida",
-    });
-  }
-
-  // Respuesta exitosa
-  return res.status(200).json({
-    status: "success",
-    message: "Imagen cargada correctamente",
-    user: req.user,
-    file: req.file,
-    image,
-  });
 };
 
 module.exports = {
