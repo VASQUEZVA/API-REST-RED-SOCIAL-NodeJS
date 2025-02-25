@@ -260,10 +260,20 @@ const update = async (req, res) => {
   }
 };
 
+const upload = (req, res) => {
+
+  return res.status(200).json({
+    status: "success",
+    message: "Imagen cargada correctamente",
+   user: req.user,
+  });
+};
+
 module.exports = {
   register,
   login,
   profile,
   ListProfiles,
   update,
+  upload,
 };
