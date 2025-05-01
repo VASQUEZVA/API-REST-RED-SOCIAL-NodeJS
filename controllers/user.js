@@ -280,7 +280,6 @@ const upload = async (req, res) => {
 
     // Comprobar extensión válida
     if (!["png", "jpg", "jpeg", "gif"].includes(extension)) {
-
       // Obtener ruta del archivo subido
       const filePath = req.file.path;
 

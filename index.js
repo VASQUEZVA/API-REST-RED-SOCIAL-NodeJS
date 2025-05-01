@@ -9,7 +9,7 @@ connection();
 // crear  servidor()
 
 const app = express();
-const port = 3000;
+const port = 3900;
 
 // configurar cors
 app.use(cors());
@@ -27,7 +27,7 @@ const FollowRoutes = require("./routes/follow");
 
 app.use("/api", UserRoutes);
 app.use("/api", PublicationRoutes);
-app.use("/api", FollowRoutes);
+app.use("/api", FollowRoutes);  
 
 // Poner servidor a escuchar http
 
